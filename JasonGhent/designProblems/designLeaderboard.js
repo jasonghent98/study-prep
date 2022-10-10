@@ -1,95 +1,51 @@
 class Leaderboard {
     constructor() {
-        this.hash = {};
+        this.scores = {}
     }
     addScore(playerId, score) {
-        this.hash[playerId] ? this.hash[playerId] += score : this.hash[playerId] = score;
+        this.scores[playerId] = this.scores[playerId] + score || score
     }
-    
-    reset(playerId) {
-        delete this.hash[playerId];
-    }
-    
-    top(k) {
-        const minHeap = new Heap()
-        let scores = Object.values(this.hash);
-        for(const score of scores) {
-            if(minHeap.size < k) {
-                minHeap.add(score)
-            } else if(minHeap.peek() < score) {
-                minHeap.remove()
-                minHeap.add(score)
+    top(K) {
+        // use a heap
+        const heap = new Heap((a,b) => b-a)
+        const scores = Object.values(this.scores)
+        // iterate over the scores and add to heap while < K
+        for (let score of scores) {
+            if (heap.size() < K) {
+                heap.enqueue(score)
+            } else if (heap.peek() < score) { // if we're already at K BUT our current score is larger than the smallest in the heap
+                heap.dequeue()
+                heap.enqueue(score)
             }
         }
-        let sum = 0;
-        for(let i = 0; i < minHeap.array.length; i++) {
-            let curr = minHeap.array[i];
-            sum += curr;
-        }
         
-        return sum;
-        // return minHeap.array.reduce((sum, curr) => sum + curr)
+        let score = 0
+        for (let i = 0; i < heap.heap.length; i++) {
+            score += heap.heap[i]
+        }
+        return score
+    }
+    reset(playerId) {
+        delete this.scores[playerId]
     }
 }
     
 class Heap {
-  constructor(comparator = (a, b) => a - b) {
-    this.array = []
-    this.comparator = (i1, i2) => {
-      const value = comparator(this.array[i1], this.array[i2])
-      if (Number.isNaN(value)) {
-        throw new Error(
-          `Comparator should evaluate to a number. Got ${value} when comparing ${this.array[i1]} with ${this.array[i2]}`
-        )
-      }
-      return value
+    constructor(compare) {
+        this.heap = []
+        this.compare = compare
     }
-  }
-
-  add(value) {
-    this.array.push(value)
-    this.bubbleUp()
-  }
-  peek() {
-    return this.array[0]
-  }
-  remove(index = 0) {
-    if (!this.size) return null
-    this.swap(index, this.size - 1) // swap with last
-    const value = this.array.pop() // remove element
-    this.bubbleDown(index)
-    return value
-  }
-  size() {
-    return this.array.length
-  }
-  bubbleUp() {
-    let index = this.size - 1
-    const parent = (i) => Math.ceil(i / 2 - 1)
-    while (parent(index) >= 0 && this.comparator(parent(index), index) > 0) {
-      this.swap(parent(index), index)
-      index = parent(index)
+    enqueue(val) {
+        this.heap.push(val)
+        this.heap.sort(this.compare)
     }
-  }
-  bubbleDown(index = 0) {
-    let curr = index
-    const left = (i) => 2 * i + 1
-    const right = (i) => 2 * i + 2
-    const getTopChild = (i) =>
-      right(i) < this.size && this.comparator(left(i), right(i)) > 0
-        ? right(i)
-        : left(i)
-
-    while (
-      left(curr) < this.size &&
-      this.comparator(curr, getTopChild(curr)) > 0
-    ) {
-      const next = getTopChild(curr)
-      this.swap(curr, next)
-      curr = next
+    dequeue() {
+        return this.heap.pop()
     }
-  }
-  swap(i1, i2) {
-    ;[this.array[i1], this.array[i2]] = [this.array[i2], this.array[i1]]
-  }
+    peek() {
+        return this.heap[this.heap.length - 1]
+    }
+    size() {
+        return this.heap.length
+    }
 }
